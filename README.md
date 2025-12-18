@@ -3,10 +3,11 @@
 客户端请求/api/events/report
 ```json
 {
-    "user_id": "u123",
-    "platform": "android",
-    "region": "CN",
-    "event_type": "heartbeat"
+  "user_id": "u123",
+  "platform": "android",
+  "region": "CN-Guangdong-Shenzhen",
+  "app_version": "1.2.3",
+  "event_time": "2025-12-18T10:20:30Z"   // 可选，不传用服务器时间
 }
 ```
 

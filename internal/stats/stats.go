@@ -14,6 +14,7 @@ type DailySummary struct {
 	OnlineUsers    int64            `json:"online_users"`
 	PlatformActive map[string]int64 `json:"platform_active"`
 	RegionActive   map[string]int64 `json:"region_active"`
+	VersionActive  map[string]int64 `json:"version_active"`
 }
 
 // GetLastNDaysSummary queries DB and builds per-day stats including per-platform active users.
@@ -86,7 +87,32 @@ func GetLastNDaysSummary(db *gorm.DB, days int) ([]DailySummary, error) {
 		platformMap[dayStr][r.Platform] = r.Cnt
 	}
 
-	// 4) Active users per day + region.
+	// 4) Active users per day + app version.
+	type VersionRow struct {
+		Day     time.Time
+		Version string
+		Cnt     int64
+	}
+	var vRows []VersionRow
+	if err := db.Raw(`
+        SELECT DATE(event_time) AS day, app_version AS version, COUNT(DISTINCT user_id) AS cnt
+        FROM user_events
+        WHERE event_time >= ?
+        GROUP BY DATE(event_time), app_version
+        ORDER BY day, app_version
+    `, start).Scan(&vRows).Error; err != nil {
+		return nil, err
+	}
+	versionMap := make(map[string]map[string]int64)
+	for _, r := range vRows {
+		dayStr := r.Day.Format("2006-01-02")
+		if versionMap[dayStr] == nil {
+			versionMap[dayStr] = make(map[string]int64)
+		}
+		versionMap[dayStr][r.Version] = r.Cnt
+	}
+
+	// 5) Active users per day + region.
 	type RegionRow struct {
 		Day    time.Time
 		Region string
@@ -111,7 +137,7 @@ func GetLastNDaysSummary(db *gorm.DB, days int) ([]DailySummary, error) {
 		regionMap[dayStr][r.Region] = r.Cnt
 	}
 
-	// 5) Build continuous N days result.
+	// 6) Build continuous N days result.
 	res := make([]DailySummary, 0, days)
 	for d := 0; d < days; d++ {
 		day := start.AddDate(0, 0, d)
@@ -126,6 +152,7 @@ func GetLastNDaysSummary(db *gorm.DB, days int) ([]DailySummary, error) {
 			ActiveUsers:    activeUsers,
 			OnlineUsers:    onlineUsers,
 			PlatformActive: platformMap[dayStr],
+			VersionActive:  versionMap[dayStr],
 			RegionActive:   regionMap[dayStr],
 		})
 	}

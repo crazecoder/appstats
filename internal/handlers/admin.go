@@ -66,6 +66,10 @@ const adminHTMLTemplate = `
   </div>
 
   <div class="chart-container">
+    <canvas id="versionChart"></canvas>
+  </div>
+
+  <div class="chart-container">
     <canvas id="regionChart"></canvas>
   </div>
 
@@ -79,6 +83,7 @@ const adminHTMLTemplate = `
     let dailyChartInstance = null;
     let platformChartInstance = null;
     let regionChartInstance = null;
+    let versionChartInstance = null;
 
     function aggregateStats(mode) {
       if (mode === 'day') {
@@ -114,7 +119,8 @@ const adminHTMLTemplate = `
             active_users: 0,
             online_users: 0,
             platform_active: {},
-            region_active: {}
+            region_active: {},
+            version_active: {}
           };
           map[key] = agg;
         }
@@ -133,6 +139,12 @@ const adminHTMLTemplate = `
         for (const r in ra) {
           if (!Object.prototype.hasOwnProperty.call(ra, r)) continue;
           agg.region_active[r] = (agg.region_active[r] || 0) + (ra[r] || 0);
+        }
+
+        const va = d.version_active || {};
+        for (const v in va) {
+          if (!Object.prototype.hasOwnProperty.call(va, v)) continue;
+          agg.version_active[v] = (agg.version_active[v] || 0) + (va[v] || 0);
         }
       }
 
@@ -347,6 +359,69 @@ const adminHTMLTemplate = `
       });
     }
 
+    function renderVersionChart(data) {
+      const versionTotals = {};
+      for (const d of data) {
+        const va = d.version_active || {};
+        for (const v in va) {
+          if (!Object.prototype.hasOwnProperty.call(va, v)) continue;
+          const key = v || '未知';
+          versionTotals[key] = (versionTotals[key] || 0) + (va[v] || 0);
+        }
+      }
+
+      const entries = Object.entries(versionTotals).sort((a, b) => b[1] - a[1]);
+      const labels = entries.map(e => e[0]);
+      const values = entries.map(e => e[1]);
+
+      const bgColors = [
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 99, 132, 0.7)',
+        'rgba(255, 206, 86, 0.7)',
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+        'rgba(255, 159, 64, 0.7)'
+      ];
+      const borderColors = [
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+      ];
+
+      const bg = labels.map((_, i) => bgColors[i % bgColors.length]);
+      const bd = labels.map((_, i) => borderColors[i % borderColors.length]);
+
+      const ctx = document.getElementById('versionChart').getContext('2d');
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: '活跃用户数',
+            data: values,
+            backgroundColor: bg,
+            borderColor: bd,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'APP 版本分布（当前时间维度总计）'
+            }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } }
+          }
+        }
+      });
+    }
+
     function redrawCharts(mode) {
       const data = aggregateStats(mode);
 
@@ -359,10 +434,14 @@ const adminHTMLTemplate = `
       if (regionChartInstance) {
         regionChartInstance.destroy();
       }
+      if (versionChartInstance) {
+        versionChartInstance.destroy();
+      }
 
       dailyChartInstance = renderDailyChart(data);
       platformChartInstance = renderPlatformChart(data);
       regionChartInstance = renderRegionChart(data);
+      versionChartInstance = renderVersionChart(data);
     }
 
     (function init() {

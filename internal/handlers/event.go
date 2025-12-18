@@ -12,11 +12,11 @@ import (
 
 // ReportEventRequest is the payload for the write-only event reporting API.
 type ReportEventRequest struct {
-	UserID    string     `json:"user_id" binding:"required"`
-	Platform  string     `json:"platform" binding:"required"` // ios/android/web
-	Region    string     `json:"region"`
-	EventType string     `json:"event_type" binding:"required"`
-	EventTime *time.Time `json:"event_time"`
+	UserID     string     `json:"user_id" binding:"required"`
+	Platform   string     `json:"platform" binding:"required"` // ios/android/web
+	Region     string     `json:"region"`
+	AppVersion string     `json:"app_version"` // 可选，用于统计 app 版本分布
+	EventTime  *time.Time `json:"event_time"`
 }
 
 // ReportEventHandler accepts event reports and writes them into the database.
@@ -35,11 +35,11 @@ func ReportEventHandler(db *gorm.DB) gin.HandlerFunc {
 
 		// Insert event
 		evt := models.UserEvent{
-			UserID:    req.UserID,
-			EventType: req.EventType,
-			Platform:  req.Platform,
-			Region:    req.Region,
-			EventTime: eventTime,
+			UserID:     req.UserID,
+			AppVersion: req.AppVersion,
+			Platform:   req.Platform,
+			Region:     req.Region,
+			EventTime:  eventTime,
 		}
 		if err := db.Create(&evt).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create event"})
