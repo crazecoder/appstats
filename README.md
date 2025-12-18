@@ -12,4 +12,7 @@
 ```
 
 管理平台地址/admin
-
+![](https://github.com/crazecoder/appstats/blob/main/screen/QQ20251218-213123.png?raw=true)
+![](https://github.com/crazecoder/appstats/blob/main/screen/QQ20251218-213134.png?raw=true)
+![](https://github.com/crazecoder/appstats/blob/main/screen/QQ20251218-213148.png?raw=true)
+![](https://github.com/crazecoder/appstats/blob/main/screen/QQ20251218-213527.png?raw=true)
